@@ -1,0 +1,46 @@
+{
+  "retrieval_date": "2026-10-29",
+  "source": "Yahoo Finance via yfinance (reviewers must refetch; full history not redistributed in git)",
+  "portfolio_ticker": "QQQ",
+  "benchmark_ticker": "SPY",
+  "fetch_command": "python scripts/fetch_case_study_csv.py --output data/case_study_qqq_spy.csv",
+  "start_date": "2019-01-01",
+  "end_date": "2024-12-31",
+  "price_field": "Close with auto_adjust=true",
+  "return_definition": "daily simple pct_change after inner join on dates",
+  "expected": {
+    "aligned_rows": 1508,
+    "first_date": "2019-01-03",
+    "last_date": "2024-12-30",
+    "sha256": "f3b19184136da53ecd01c29b198362544ce0480e144e125a0c0d450b6bdd7e53"
+  },
+  "quantlens_settings": {
+    "annual_risk_free_rate": 0.04,
+    "periods_per_year": 252,
+    "var_confidence": 0.95,
+    "rolling_window": 60
+  },
+  "reference_metrics": {
+    "portfolio_cagr": 0.2305642506877137,
+    "benchmark_cagr": 0.17192084230147664,
+    "portfolio_sharpe": 0.8106030827584539,
+    "beta": 1.1424899403374416,
+    "portfolio_max_drawdown": -0.3511872651879727,
+    "portfolio_var": 0.024472113673578877,
+    "portfolio_es": 0.03602889196058428
+  },
+  "reference_regression": {
+    "r_squared": 0.8676819781354435,
+    "periodic_alpha": 0.0001550458741752391,
+    "annualized_alpha": 0.03907156029216025,
+    "periodic_beta": 1.1424899403374416,
+    "ols_p_alpha": 0.2810812936156251,
+    "hac_p_alpha": 0.2823760429627061,
+    "hac_lags": 7,
+    "durbin_watson": 1.9516169594924064
+  },
+  "reference_regimes": {
+    "benchmark_up_days": 840,
+    "benchmark_down_days": 668
+  }
+}
