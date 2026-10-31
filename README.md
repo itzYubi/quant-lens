@@ -1,69 +1,103 @@
 # QuantLens — Portfolio Analytics & Risk Research
 
-QuantLens is a **Portfolio Risk, Alpha Robustness, and Regime Analysis Lab**: a local (and Streamlit Cloud–ready) web app for uploading dated portfolio and benchmark returns and producing transparent performance, risk, CAPM regression (OLS + Newey–West HAC), rolling stability charts, descriptive regime splits, sensitivity checks, and a deterministic research summary.
+QuantLens is a research-oriented application for analyzing **aligned portfolio and benchmark return series**. Given a CSV of dated simple returns, it computes transparent performance and risk metrics, estimates a CAPM linear model with **classical OLS and Newey–West HAC inference reported side by side**, visualizes rolling risk, performs descriptive regime and sensitivity checks, and exports reproducible results. The emphasis is on **quantitative correctness, statistical uncertainty, and reproducibility**—not on marketing claims about alpha.
 
-> **Not financial advice.** All metrics are descriptive summaries of uploaded data.
+> **Disclaimer:** QuantLens produces descriptive historical summaries. It is not investment advice and cannot establish manager skill from returns alone.
 
-## Features
+---
 
-- CSV upload with validation (columns, dates, duplicates, missing values, returns ≤ −100%)
-- Configurable annual risk-free rate and periods-per-year (default 252)
-- Cumulative growth and drawdown charts (Plotly)
-- Metrics table: CAGR, ann. arithmetic return, vol, Sharpe, Sortino, beta, tracking error, IR, max drawdown, historical VaR/ES
-- CAPM regression with OLS and HAC inference side by side
-- Rolling beta, volatility, and Sharpe (configurable window)
-- Descriptive benchmark up/down regime comparison
-- Subperiod sensitivity and optional outlier diagnostic for alpha
-- Download metrics as CSV/JSON; bundled **synthetic** sample CSV
+## Overview
 
-## Screenshot
+Many portfolio summaries report point estimates (CAGR, Sharpe, alpha) without clarifying definitions, annualization, or inference assumptions. QuantLens addresses that gap for a **two-series** setting (portfolio + benchmark):
 
-After launching the app locally, capture a screenshot of the Overview tab for your README or portfolio (not included in-repo).
+1. **Validate and align** inputs explicitly (dates, missing values, duplicates).
+2. **Document formulas** in code and in [`docs/methodology.md`](docs/methodology.md).
+3. **Separate** OLS coefficient estimates from HAC robust standard errors ([`docs/statistical-inference.md`](docs/statistical-inference.md)).
+4. **Test** core formulas with hand-calculable pytest cases ([`docs/testing.md`](docs/testing.md)).
+5. **Summarize** findings with deterministic text tied to computed outputs (no LLM-generated narratives).
 
-## Prerequisites (macOS)
+The Streamlit UI (`app.py`) orchestrates the `quantlens` Python package; all displayed values are computed from user or sample data.
 
-- Python **3.14** (project `.python-version` and local `.venv`; Streamlit Community Cloud — set Python 3.14 when available, or match your deployed runtime to the version you tested)
-- `git` (optional)
+---
 
-## Setup
+## Live demo
 
-```bash
-cd quant-lens
-python3.14 -m venv .venv   # or: python3 -m venv .venv if it is 3.14
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+**[https://quant-lens-ub.streamlit.app/](https://quant-lens-ub.streamlit.app/)**
 
-## Run locally
+The hosted app loads the bundled **synthetic** sample by default (not historical market data). Upload your own CSV from the sidebar to analyze custom series.
 
-```bash
-streamlit run app.py
-```
+Local run: [Installation](#installation).
 
-Open the URL shown in the terminal (typically http://localhost:8501).
+---
 
-## CSV schema
+## Screenshots
 
-| Column | Required | Description |
-|--------|----------|-------------|
-| `date` | Yes | Parseable date (e.g. `2023-01-03`) |
-| `portfolio_return` | Yes | Simple decimal return (`0.01` = +1%) |
-| `benchmark_return` | Yes | Simple decimal return |
-| `risk_free_rate` | No | Per-period decimal by default; checkbox in UI if annual |
+Captured from the live demo with the synthetic sample (300 observations).
 
-Rows are sorted by date and aligned; missing returns are dropped (not zero-filled).
+| Overview — cumulative growth & KPIs | Drawdown & metrics table |
+|:---:|:---:|
+| ![Overview](docs/images/overview.png) | ![Drawdown and metrics](docs/images/drawdown-metrics.png) |
 
-## Methodology notes
+| Rolling beta & volatility | CAPM regression (OLS + HAC) |
+|:---:|:---:|
+| ![Rolling risk](docs/images/rolling-risk.png) | ![Regression](docs/images/regression.png) |
 
-- **Wealth:** \(W_t = \prod (1 + r_t)\), starting at 1.
-- **CAGR:** \((W_T)^{252/n} - 1\) with configurable periods/year.
-- **Ann. arithmetic return:** mean(\(r_t\)) × periods/year (distinct from CAGR).
-- **Volatility:** sample std (ddof=1) × √periods/year.
-- **Sharpe:** ann. mean excess return / ann. vol; periodic RF = annual RF / periods/year unless CSV column supplied.
-- **Sortino:** MAR = 0 on simple returns; downside deviation uses excess returns below (MAR − RF).
-- **VaR/ES:** empirical quantiles; UI reports **positive loss magnitude** at chosen confidence.
-- **CAPM:** OLS of portfolio excess on benchmark excess; HAC (Newey–West) with lag rule `floor(4*(n/100)^(2/9))`.
-- **Rolling metrics:** computed only after a full window (no look-ahead).
+---
+
+## Features (implemented)
+
+| Area | Capability |
+|------|------------|
+| **Data** | CSV upload; validation; optional synthetic sample; JSON/CSV export |
+| **Performance** | Wealth curve, drawdown, CAGR, annualized arithmetic return |
+| **Risk** | Volatility, Sharpe, Sortino, max drawdown, historical VaR & ES |
+| **Relative** | Beta, tracking error, information ratio |
+| **Regression** | CAPM OLS; HAC SEs, p-values, CIs; OLS F-stat & Durbin–Watson |
+| **Rolling** | Configurable-window beta, volatility, Sharpe (no look-ahead) |
+| **Regimes** | Descriptive split when benchmark return ≥ 0 vs &lt; 0 |
+| **Robustness** | First/second-half subperiods; optional outlier alpha diagnostic |
+| **Research output** | Template-based summary bullets with numeric p-values |
+| **Glossary** | In-app definitions (CAPM, kurtosis, Omnibus, rolling metrics, etc.) |
+
+**Not implemented:** multi-factor models, holdings-based attribution, live market data feeds, database persistence, automated hyperparameter search, or walk-forward backtesting.
+
+---
+
+## Methodology
+
+Return definitions, annualization (\(P=252\) default), risk-free conversion (\(r_f = R_f^{ann}/P\)), Sharpe/Sortino conventions, VaR loss sign, and rolling-window rules are specified in:
+
+**→ [docs/methodology.md](docs/methodology.md)**
+
+Implementation references: `quantlens/metrics.py`, `quantlens/data.py`.
+
+---
+
+## Statistical inference
+
+CAPM: regress portfolio excess returns on benchmark excess returns. OLS yields \(\hat\alpha, \hat\beta\); HAC (Newey–West) adjusts **standard errors and confidence intervals only**, not the fitted coefficients. Default HAC bandwidth:
+
+\[
+L = \left\lfloor 4 (n/100)^{2/9} \right\rfloor
+\]
+
+Full discussion: **→ [docs/statistical-inference.md](docs/statistical-inference.md)** (`quantlens/regression.py`).
+
+---
+
+## Reproducibility
+
+| Input | Convention |
+|-------|------------|
+| Returns | Simple decimals; \(0.01 = +1\%\) |
+| Columns | `date`, `portfolio_return`, `benchmark_return`; optional `risk_free_rate` |
+| Alignment | Chronological sort; drop missing returns; **no** zero-fill |
+| Demo data | `data/sample_returns.csv` — **synthetic**, seed 42 |
+| Historical study | Fetch QQQ/SPY via `scripts/fetch_case_study_csv.py`; verify with `scripts/reproduce_case_study_analysis.py` and [`research/case_study_manifest.json`](research/case_study_manifest.json) |
+
+Uploaded CSVs are processed **in memory** in Streamlit; they are not written to disk by the app.
+
+---
 
 ## Testing
 
@@ -71,29 +105,80 @@ Rows are sorted by date and aligned; missing returns are dropped (not zero-fille
 python -m pytest -q
 ```
 
-## Case study
+**Verified:** 35 tests, all passing (see [`docs/testing.md`](docs/testing.md) for module breakdown, hand-calculable cases, and coverage gaps).
 
-The bundled `data/sample_returns.csv` is **synthetic** (fixed RNG seed) for offline demos and tests. A properly sourced historical case study (tickers, adjustments, retrieval date) is a documented **future improvement** — not included as real market data.
+---
 
-For a reproducible **historical** workflow (QQQ vs SPY example, optional download script), see [`research/HISTORICAL_CASE_STUDY.md`](research/HISTORICAL_CASE_STUDY.md). After fetching data locally, documented computed results are in [`research/CASE_STUDY_FINDINGS.md`](research/CASE_STUDY_FINDINGS.md) (regenerate numbers if you refetch).
+## Case study (QQQ vs SPY)
 
-## Deploy on Streamlit Community Cloud (free tier)
+Optional historical workflow (2019–2024 window, Yahoo Finance via `yfinance`). Documented results and reproduction steps:
 
-1. Push this repository to GitHub (no secrets, venv, or user uploads).
-2. Go to [https://share.streamlit.io/](https://share.streamlit.io/) and connect the repo.
-3. Set main file to `app.py` and deploy.
-4. Verify the public URL loads and the sample dataset runs.
+**→ [docs/case-study-qqq-spy.md](docs/case-study-qqq-spy.md)**
 
-Free-tier limits, sleep behavior, and quotas may change; do not rely on this doc for SLA or performance guarantees.
+Supporting files: [`research/HISTORICAL_CASE_STUDY.md`](research/HISTORICAL_CASE_STUDY.md), [`research/CASE_STUDY_FINDINGS.md`](research/CASE_STUDY_FINDINGS.md).
 
-**Local verification ≠ live deployment.** Confirm the hosted app yourself after deploy.
+---
 
 ## Limitations
 
-- Two return series only; no multi-factor or holdings data.
-- OLS/HAC inference assumes a linear CAPM; structural breaks and non-normality are not fully modeled.
-- Regime split is descriptive (benchmark sign), not a latent regime model.
-- Cannot prove manager skill or identify unobserved exposures from returns alone.
+- Two return series only; linear single-factor CAPM.
+- Historical metrics and regression are **in-sample** descriptions.
+- OLS F-test and Durbin–Watson are classical, not HAC-robust.
+- Regime labels are sign-based, not econometric regime models.
+- VaR/ES are empirical quantiles, not GARCH or parametric stress tests.
+- Estimated alpha precision depends on sample length and model misspecification.
+
+---
+
+## Installation
+
+**Requirements:** Python **3.14** (see `.python-version`), macOS/Linux/WSL.
+
+```bash
+git clone <your-repo-url>
+cd quant-lens
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Open the local URL (typically http://localhost:8501). Enable **Use bundled synthetic sample data** to explore without uploading.
+
+**Deploy (Streamlit Community Cloud):** [Live app](https://quant-lens-ub.streamlit.app/) — main file `app.py`, Python version aligned with `.python-version`.
+
+---
+
+## Technology stack
+
+Direct runtime dependencies (`requirements.txt`):
+
+| Package | Role |
+|---------|------|
+| Streamlit | Web UI |
+| pandas / NumPy | Data alignment & numerics |
+| SciPy | Scientific utilities |
+| statsmodels | OLS CAPM & HAC inference |
+| Plotly | Interactive charts |
+| pytest | Automated tests |
+
+Optional (case study fetch only): `yfinance` — not required to run the app or tests.
+
+---
+
+## Repository layout
+
+```
+app.py                 # Streamlit entrypoint
+quantlens/             # Core library (data, metrics, regression, charts, report, regime, glossary)
+tests/                 # pytest suite
+docs/                  # Methodology, inference, case study, testing
+data/                  # Synthetic sample; format example
+research/              # Case study manifest & notes
+scripts/               # Fetch & reproduce case study CSV
+```
+
+---
 
 ## License
 

@@ -7,7 +7,9 @@ This folder holds documentation and optional scripts to build a **reproducible h
 | File | Purpose |
 |------|---------|
 | [HISTORICAL_CASE_STUDY.md](./HISTORICAL_CASE_STUDY.md) | Methodology, data sources, assumptions, reproduction steps |
-| [../scripts/fetch_case_study_csv.py](../scripts/fetch_case_study_csv.py) | Optional one-off script to download prices and write a CSV |
+| [../scripts/fetch_case_study_csv.py](../scripts/fetch_case_study_csv.py) | Optional fetch script (requires `yfinance`) |
+| [case_study_manifest.json](./case_study_manifest.json) | Reference numerics and SHA256 for verification |
+| [../docs/case-study-qqq-spy.md](../docs/case-study-qqq-spy.md) | Full case study for reviewers |
 
 The bundled `data/sample_returns.csv` remains **synthetic** for demos and unit tests. Do not treat it as market history.
 
