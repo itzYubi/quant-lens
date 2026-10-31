@@ -28,10 +28,10 @@ Test modules:
 
 Tests assert numeric equality (or tight tolerance) against manually derived values, for example:
 
-- **CAGR:** three-period return series with explicit \(W_T\) and \(W_T^{252/3}-1\).
+- **CAGR:** three-period return series with explicit W_T and W_T^(252/3) - 1.
 - **Volatility:** `std(ddof=1) * sqrt(252)` on a fixed quadruple of returns.
 - **Tracking error / IR:** active return series with explicit sample std and mean.
-- **CAPM (noise-free):** portfolio constructed as \(r_f + \alpha + \beta(e_b)\) with exact \(\hat\alpha, \hat\beta\).
+- **CAPM (noise-free):** portfolio built as r_f + alpha + beta × e_b with exact OLS recovery.
 - **VaR/ES:** empirical quantile and tail mean on a fixed six-point series.
 
 See `tests/test_hand_calculable.py` and `tests/test_metrics.py` for exact fixtures.

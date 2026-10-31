@@ -75,9 +75,9 @@ Values below were **recomputed locally** with `reproduce_case_study_analysis.py`
 | Quantity | Value |
 |----------|------:|
 | R² | 0.868 |
-| Periodic \(\hat\alpha\) | 0.000155 |
-| Annualized \(\hat\alpha\) (×252) | 3.91% |
-| \(\hat\beta\) | 1.142 |
+| Periodic alpha (OLS) | 0.000155 |
+| Annualized alpha (×252) | 3.91% |
+| Beta (OLS) | 1.142 |
 | Durbin–Watson (OLS) | 1.95 |
 
 ---
@@ -89,9 +89,9 @@ Values below were **recomputed locally** with `reproduce_case_study_analysis.py`
 | OLS | 0.281 |
 | HAC (Newey–West, **7** lags) | 0.282 |
 
-**Interpretation:** Point \(\hat\alpha_{ann}\) is positive, but **neither** OLS nor HAC rejects \(\alpha=0\) at conventional 5% levels. This does not support a strong claim of nonzero alpha in this single-factor specification.
+**Interpretation:** Point annualized alpha is positive, but **neither** OLS nor HAC rejects alpha = 0 at the 5% level in this specification.
 
-HAC lag: \(L = \lfloor 4 (n/100)^{2/9} \rfloor = 7\) for \(n=1508\).
+HAC lag: `L = floor(4 × (n/100)^(2/9)) = 7` for n = 1,508.
 
 ---
 
@@ -122,7 +122,7 @@ Not a latent regime model; no causal interpretation.
 | First | 8.85% | 1.05 |
 | Second | 0.13% | 1.29 |
 
-Subperiod estimates illustrate **instability** of \(\hat\alpha\) across time; they are not independent out-of-sample tests.
+Subperiod estimates illustrate **instability** of estimated alpha over time; they are not independent out-of-sample tests.
 
 ---
 

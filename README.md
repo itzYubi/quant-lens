@@ -65,7 +65,7 @@ Captured from the live demo with the synthetic sample (300 observations).
 
 ## Methodology
 
-Return definitions, annualization (\(P=252\) default), risk-free conversion (\(r_f = R_f^{ann}/P\)), Sharpe/Sortino conventions, VaR loss sign, and rolling-window rules are specified in:
+Return definitions, annualization (P = 252 default), risk-free conversion (`r_f = R_f_ann / P`), Sharpe/Sortino conventions, VaR loss sign, and rolling-window rules are specified in:
 
 **→ [docs/methodology.md](docs/methodology.md)**
 
@@ -75,11 +75,15 @@ Implementation references: `quantlens/metrics.py`, `quantlens/data.py`.
 
 ## Statistical inference
 
-CAPM: regress portfolio excess returns on benchmark excess returns. OLS yields \(\hat\alpha, \hat\beta\); HAC (Newey–West) adjusts **standard errors and confidence intervals only**, not the fitted coefficients. Default HAC bandwidth:
+CAPM: regress portfolio excess returns on benchmark excess returns. OLS coefficient estimates (alpha, beta) are unchanged under HAC; HAC (Newey–West) adjusts **standard errors and confidence intervals only**.
 
-\[
-L = \left\lfloor 4 (n/100)^{2/9} \right\rfloor
-\]
+Default HAC lag count (matches `default_hac_lags()` in `quantlens/regression.py`):
+
+```text
+L = floor( 4 × (n / 100)^(2/9) )
+```
+
+Examples: n = 300 → L = 5; n = 1,508 → L = 7. This is a common sample-size rule of thumb for `maxlags` in statsmodels HAC—not a formal model-selection procedure.
 
 Full discussion: **→ [docs/statistical-inference.md](docs/statistical-inference.md)** (`quantlens/regression.py`).
 
@@ -89,7 +93,7 @@ Full discussion: **→ [docs/statistical-inference.md](docs/statistical-inferenc
 
 | Input | Convention |
 |-------|------------|
-| Returns | Simple decimals; \(0.01 = +1\%\) |
+| Returns | Simple decimals; `0.01` = +1% |
 | Columns | `date`, `portfolio_return`, `benchmark_return`; optional `risk_free_rate` |
 | Alignment | Chronological sort; drop missing returns; **no** zero-fill |
 | Demo data | `data/sample_returns.csv` — **synthetic**, seed 42 |

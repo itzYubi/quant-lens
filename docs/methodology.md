@@ -6,10 +6,10 @@ This document defines the **mathematical conventions implemented in code**. All 
 
 | Setting | Default | Implementation |
 |--------|---------|----------------|
-| Return type | Simple decimal returns | \(r_t\); `0.01` = +1% |
-| Wealth index | \(W_0 = 1\), \(W_t = \prod_{s \le t}(1+r_s)\) | `cumulative_wealth()` |
-| Periods per year | \(P = 252\) | UI / `periods_per_year` |
-| Risk-free (UI) | Annual rate \(R_f^{ann}\) | Periodic: \(r_f = R_f^{ann}/P\) | `annual_to_periodic_rate()` |
+| Return type | Simple decimal returns | `r_t`; `0.01` = +1% |
+| Wealth index | W₀ = 1, W_t = product of (1 + r_s) | `cumulative_wealth()` |
+| Periods per year | P = 252 | UI / `periods_per_year` |
+| Risk-free (UI) | Annual rate R_f_ann | Periodic: r_f = R_f_ann / P | `annual_to_periodic_rate()` |
 | Sample variance / std | `ddof=1` | pandas / NumPy |
 | Alignment | Sort by date; drop missing returns; no zero-fill | `validate_and_align()` |
 
@@ -19,159 +19,142 @@ This document defines the **mathematical conventions implemented in code**. All 
 
 **CAGR** (portfolio or benchmark):
 
-\[
-W_T = \prod_{t=1}^{n}(1+r_t), \quad \text{CAGR} = W_T^{P/n} - 1
-\]
+```text
+W_T = product over t of (1 + r_t)
+CAGR = W_T^(P/n) - 1
+```
 
-- **Interpretation:** Constant annual simple rate that compounds to the same terminal wealth over \(n\) periods.
-- **Assumptions:** Simple returns; \(W_T > 0\).
-- **Edge cases:** Returns `None` if \(n=0\), \(W_T \le 0\).
+- **Interpretation:** Constant annual simple rate that compounds to the same terminal wealth over n periods.
+- **Assumptions:** Simple returns; W_T > 0.
+- **Edge cases:** Returns `None` if n = 0 or W_T ≤ 0.
 - **Code:** `cagr()`, `cumulative_growth_final()`
 
 **Annualized arithmetic return:**
 
-\[
-\bar{r}_{ann} = \left(\frac{1}{n}\sum_{t=1}^{n} r_t\right) \times P
-\]
+```text
+r_ann = mean(r_t) × P
+```
 
 - **Interpretation:** Scales the sample mean period return; **not** CAGR.
-- **Edge cases:** Defined for \(n \ge 1\).
+- **Edge cases:** Defined for n ≥ 1.
 - **Code:** `annualized_arithmetic_return()`
 
 ---
 
 ## Annualized volatility
 
-\[
-\sigma_{ann} = \text{std}(r_1,\ldots,r_n; \text{ddof=1}) \times \sqrt{P}
-\]
+```text
+sigma_ann = std(r_1, ..., r_n; ddof=1) × sqrt(P)
+```
 
 - **Interpretation:** Dispersion of **raw** periodic returns (portfolio or benchmark headline vol).
-- **Assumptions:** Stationarity not required; descriptive sample statistic.
-- **Edge cases:** `None` if \(n < 2\).
+- **Edge cases:** `None` if n < 2.
 - **Code:** `annualized_volatility()`
 
 ---
 
 ## Excess, active, and benchmark-relative quantities
 
-- **Excess return:** \(e_t = r_t - r_{f,t}\) — `excess_returns()`
-- **Active return:** \(a_t = r_{p,t} - r_{b,t}\) — `active_returns()`
+- **Excess return:** e_t = r_t - r_f,t — `excess_returns()`
+- **Active return:** a_t = r_p,t - r_b,t — `active_returns()`
 
 ---
 
 ## Sharpe ratio
 
-\[
-\text{Sharpe} = \frac{\bar{e} \times P}{\sigma_{ann}(e)}
-\]
+```text
+Sharpe = (mean(e_t) × P) / sigma_ann(excess)
+```
 
-where \(\sigma_{ann}(e)\) is the annualized sample std of **excess** returns.
+where `sigma_ann(excess)` is the annualized sample std of **excess** returns.
 
-- **Interpretation:** Excess return per unit of excess-return volatility.
-- **Assumptions:** Constant or row-wise \(r_f\); uses same \(P\) for mean and vol.
-- **Edge cases:** `None` if excess vol is 0 or undefined.
 - **Code:** `sharpe_ratio()`
 
 ---
 
 ## Sortino ratio
 
-Numerator: \(\bar{e} \times P\).
+Numerator: mean(e_t) × P.
 
-Downside: let MAR = 0 on **simple** returns (configurable `target_periodic`). Define excess MAR threshold \(m_t = \text{MAR} - r_{f,t}\). Shortfall observations are \(e_t - m_t < 0\); downside deviation is the sample std of those shortfalls, times \(\sqrt{P}\).
+Downside: MAR = 0 on **simple** returns (configurable `target_periodic`). Excess MAR threshold m_t = MAR - r_f,t. Shortfall observations satisfy e_t - m_t < 0; downside deviation is the sample std of those shortfalls, times sqrt(P).
 
-\[
-\text{Sortino} = \frac{\bar{e} \times P}{\sigma_{down,ann}}
-\]
+```text
+Sortino = (mean(e_t) × P) / sigma_down,ann
+```
 
-- **Interpretation:** Return relative to downside risk only.
-- **Edge cases:** `None` if fewer than two downside observations or zero downside dev.
-- **Code:** `sortino_ratio()`; `sortino_target_periodic` stored in metrics dict (0.0).
+- **Code:** `sortino_ratio()`; `sortino_target_periodic` = 0.0 in metrics dict.
 
 ---
 
 ## Beta (CAPM, sample)
 
-\[
-\beta = \frac{\widehat{\text{Cov}}(e_{p}, e_{b})}{\widehat{\text{Var}}(e_{b})}
-\]
+```text
+beta = Cov_sample(e_p, e_b) / Var_sample(e_b)
+```
 
-with \(e_p = r_p - r_f\), \(e_b = r_b - r_f\).
+with e_p = r_p - r_f, e_b = r_b - r_f.
 
-- **Interpretation:** Sample sensitivity of portfolio excess to benchmark excess.
-- **Edge cases:** `None` if \(\widehat{\text{Var}}(e_b)=0\) or \(n<2\).
-- **Code:** `beta()` — same excess definition as CAPM regression slope **in population**; OLS \(\hat\beta\) may differ slightly due to regression intercept.
+- **Code:** `beta()` — same excess definition as CAPM; OLS regression beta may differ slightly because of the fitted intercept.
 
 ---
 
 ## Tracking error and information ratio
 
-**Tracking error:**
+```text
+TE = std(a_t; ddof=1) × sqrt(P)
+IR = (mean(a_t) × P) / TE
+```
 
-\[
-TE = \text{std}(a_t; \text{ddof=1}) \times \sqrt{P}
-\]
-
-**Information ratio:**
-
-\[
-IR = \frac{\bar{a} \times P}{TE}
-\]
-
-- **Edge cases:** IR `None` if \(TE=0\) or undefined.
 - **Code:** `tracking_error()`, `information_ratio()`
 
 ---
 
 ## Maximum drawdown
 
-Wealth \(W_t\) from cumulative product. Running peak \(\Pi_t = \max_{s \le t} W_s\). Drawdown \(D_t = W_t/\Pi_t - 1\).
+Wealth W_t from cumulative product. Running peak = cummax(W). Drawdown D_t = W_t / peak_t - 1.
 
-\[
-\text{MDD} = \min_t D_t
-\]
+```text
+MDD = min_t(D_t)
+```
 
-- **Interpretation:** Worst peak-to-trough loss; **initial** \(W_0=1\) is a peak.
+Initial W_0 = 1 counts as a peak.
+
 - **Code:** `max_drawdown()`, `drawdown_series()`
 
 ---
 
 ## Historical Value at Risk (VaR)
 
-For confidence \(\gamma\) (e.g. 0.95), quantile level \(q = 1-\gamma\). Empirical quantile \(r_q = Q_q(r)\).
+For confidence γ (e.g. 0.95), quantile level q = 1 - γ. Empirical quantile r_q = Q_q(r).
 
-- **UI convention (`as_positive_loss=True`):** report \(\max(-r_q, 0)\) as a **positive loss magnitude**.
-- **Assumptions:** Empirical (non-parametric); no GARCH or parametric fit.
-- **Edge cases:** `None` if \(n<2\).
+- **UI (`as_positive_loss=True`):** report max(-r_q, 0) as a **positive loss magnitude**.
 - **Code:** `historical_var()`
 
 ---
 
 ## Expected shortfall (CVaR / ES)
 
-Let \(r_q\) be the VaR return threshold. Tail: \(\{r_t : r_t \le r_q\}\). ES is the mean of the tail; UI uses positive loss magnitude like VaR.
+Tail mean of returns at or below the VaR return threshold; UI uses the same positive-loss convention as VaR.
 
-- **Interpretation:** Average loss in the worst \((1-\gamma)\) fraction of days (empirical).
 - **Code:** `expected_shortfall()`
 
 ---
 
 ## Rolling beta, volatility, and Sharpe
 
-For window size \(w\), at index \(i \ge w-1\), use observations \(t \in [i-w+1, i]\) only.
+For window size w, at index i ≥ w-1, use only observations in [i-w+1, i].
 
-- **Rolling beta:** sample CAPM beta on excess returns in window — `rolling_beta()`; NaN before full window.
-- **Rolling vol:** sample std of **raw** returns in window \(\times \sqrt{P}\) — `rolling_volatility()`.
-- **Rolling Sharpe:** mean excess in window \(\times P\) divided by annualized std of **excess** in window — `rolling_sharpe()`.
+- **Rolling beta:** CAPM beta on excess returns in window — `rolling_beta()`; NaN until the window is full.
+- **Rolling vol:** std of **raw** returns in window × sqrt(P) — `rolling_volatility()`.
+- **Rolling Sharpe:** (mean excess in window × P) / (ann. std of excess in window) — `rolling_sharpe()`.
 
-**No look-ahead:** first valid index is \(i = w-1\).
+**No look-ahead:** first valid index is i = w - 1.
 
 ---
 
 ## Data validation (inputs)
 
-See `quantlens/data.py`: required columns `date`, `portfolio_return`, `benchmark_return`; optional `risk_free_rate`; duplicate dates rejected; returns must be \(> -1\); missing returns dropped with report.
+See `quantlens/data.py`: required columns `date`, `portfolio_return`, `benchmark_return`; optional `risk_free_rate`; duplicate dates rejected; returns must be > -1; missing returns dropped with report.
 
 ---
 
